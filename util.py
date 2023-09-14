@@ -1,6 +1,7 @@
 from langchain.prompts import PromptTemplate
 from langchain.llms import OpenAI
 from langchain.chains import LLMChain
+from langchain.chat_models import ChatOpenAI
 
 template = """
 You're an expert in copywriting. You write compelling service descriptions that convert easily. All the user has to do is give you the title of their service, and you're in charge of generating their service description. Use markdown to format your text.
@@ -9,8 +10,7 @@ You can use the following variables in your template.
 - {serviceTitle}: The service title provided by the user
 - {minWord}: The minimum word count provided by the user
 
-You should provide Headings, Sub-headings, bullet point, table, bold text, italic text in the service description
- 
+You should provide Headings, Sub-headings, bullet point, table, bold text, italic text in the service description 
  
 	Service Title:\"\" I'll write a 400-word SEO copy and expert web copy\"\"
 	Service Description:\"\"\"
@@ -324,26 +324,29 @@ Did you like my microservice sheet? Order yours now to see the results on your s
 
 Service Title to generate :\"\" {serviceTitle}\"\"
 Minimum word count :\"\" {minWord}\"\"
+Language of the service description :\"\" {language}\"\"
 Service Description :\"\"\"
 
 """
 
 prompt = PromptTemplate(
-    input_variables=["serviceTitle", "minWord"],
+    input_variables=["serviceTitle", "minWord", "language"],
     template=template.strip()
 )
 
 
-def generate(serviceTitle: str, openai_key: str) -> str:
+def generate(serviceTitle: str, minWord: int, language: str, openai_key: str) -> str:
     """
     This function generates the service description based of provided service title
+    :param language: Language of the service description
+    :param minWord: Minimum word count for the service description
     :param serviceTitle: A string of service title
     :param openai_key: Your OpenAI API key
 
     :return: Returns a string of service description
     """
 
-    llm = OpenAI(
+    llm = ChatOpenAI(
         model_name="gpt-3.5-turbo-16k",
         max_tokens=9000,
         openai_api_key=openai_key
@@ -351,4 +354,4 @@ def generate(serviceTitle: str, openai_key: str) -> str:
 
     chain = LLMChain(llm=llm, prompt=prompt)
 
-    return chain.run(serviceTitle=serviceTitle)
+    return chain.run(serviceTitle=serviceTitle, minWord=minWord, language=language)
