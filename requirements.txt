@@ -2,3 +2,4 @@ langchain
 streamlit
 openai
 chromadb
+sentence-transformers
