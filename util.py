@@ -1,7 +1,10 @@
 from langchain.prompts import PromptTemplate
 from langchain.llms import OpenAI
-from langchain.chains import LLMChain
+from langchain.chains import LLMChain, ConversationalRetrievalChain
 from langchain.chat_models import ChatOpenAI
+from langchain.vectorstores import Chroma
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.chains import SimpleSequentialChain
 
 template = """
 You're an expert in copywriting. You write compelling service descriptions that convert easily. All the user has to do is give you the title of their service, and you're in charge of generating their service description. Use markdown to format your text.
@@ -329,29 +332,83 @@ Service Description :\"\"\"
 
 """
 
-prompt = PromptTemplate(
-    input_variables=["serviceTitle", "minWord", "language"],
-    template=template.strip()
+model_name = "sentence-transformers/all-mpnet-base-v2"
+model_kwargs = {'device': 'cuda'}
+encode_kwargs = {'normalize_embeddings': False}
+
+embeddings = HuggingFaceEmbeddings(
+    model_name=model_name,
+    model_kwargs=model_kwargs,
+    encode_kwargs=encode_kwargs
 )
 
+vectorDB = Chroma(persist_directory="./vectorDB", embedding_function=embeddings)
 
-def generate(serviceTitle: str, minWord: int, language: str, openai_key: str) -> str:
+# prompt = PromptTemplate(
+#    input_variables=["serviceTitle", "minWord", "language"],
+#    template=template.strip()
+# )
+
+
+def generate(serviceTitle: str, openai_api_key: str) -> str:
     """
     This function generates the service description based of provided service title
-    :param language: Language of the service description
-    :param minWord: Minimum word count for the service description
+    :param openai_api_key: Your OpenAI API Key
     :param serviceTitle: A string of service title
-    :param openai_key: Your OpenAI API key
 
     :return: Returns a string of service description
     """
 
-    llm = ChatOpenAI(
-        model_name="gpt-3.5-turbo-16k",
-        max_tokens=9000,
-        openai_api_key=openai_key
-    )
+    plan_template = """
+    You're an expert in copywriting. You write compelling service descriptions that convert easily. All the user has to do is give you the title of their service, and you're in charge of generating their service description. Use markdown to format your text.
+    Generate the structure of the service description based on this service title : "{serviceTitle}"
+    The structure should contain headings and sub-headings, bullet points, table.
+    """
 
-    chain = LLMChain(llm=llm, prompt=prompt)
+    llm = OpenAI(temperature=.7, openai_api_key=openai_api_key)
 
-    return chain.run(serviceTitle=serviceTitle, minWord=minWord, language=language)
+    # Generate the plan
+    plan_prompt_template = PromptTemplate(input_variables=["serviceTitle"], template=plan_template)
+
+    plan_chain = LLMChain(llm=llm, prompt=plan_prompt_template)
+
+    # Generate content for each section of the plan"""
+
+    content_template = """
+    You're an web writer. You write compelling service descriptions that convert easily. Write content for each headings and sub-headings, bullet points, table following this structure.
+    You should include a table for pricing and delivery time and explain more packages in the service description.
+    Structure : {structure}
+    """
+
+    llm2 = OpenAI(model_name="gpt-3.5-turbo-16k", temperature=.7, max_tokens=9000, openai_api_key=openai_api_key)
+
+    content_prompt_template = PromptTemplate(input_variables=["structure"], template=content_template)
+
+    content_chain = LLMChain(llm=llm2, prompt=content_prompt_template)
+
+    # Enhance generated service description with Copywriting Skills
+
+    enhancement_template = """
+    You're copywriting expert. Use all your knownledge in copywriting fields, all best copywriting techniques to enhance this content.
+
+    Content :
+    ------
+    {content}
+    ------
+    """
+    enhancement_prompt_template = PromptTemplate(input_variables=["content"], template=enhancement_template)
+
+    enhancement_chain = ConversationalRetrievalChain.from_llm(llm=llm2, retriever=vectorDB.as_retriever(),
+                                                              condense_question_prompt=enhancement_prompt_template)
+
+    overall_chain = SimpleSequentialChain(chains=[plan_chain, content_chain, enhancement_chain])
+
+#    llm = ChatOpenAI(
+#        model_name="gpt-3.5-turbo-16k",
+#        max_tokens=9000,
+#        openai_api_key=openai_key
+#    )
+
+#    chain = LLMChain(llm=llm, prompt=prompt)
+
+    return overall_chain.run(serviceTitle=serviceTitle)
