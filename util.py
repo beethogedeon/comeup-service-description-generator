@@ -402,7 +402,7 @@ def generate(serviceTitle: str, openai_api_key: str) -> str:
     enhancement_chain = ConversationalRetrievalChain.from_llm(llm=llm2, retriever=vectorDB.as_retriever(),
                                                               condense_question_prompt=enhancement_prompt_template)
 
-    overall_chain = SimpleSequentialChain(chains=[plan_chain, content_chain])
+    overall_chain = SimpleSequentialChain(chains=[plan_chain, content_chain, enhancement_chain], input_key="serviceTitle", output_key="service_description")
 
     #    llm = ChatOpenAI(
     #        model_name="gpt-3.5-turbo-16k",
@@ -412,4 +412,4 @@ def generate(serviceTitle: str, openai_api_key: str) -> str:
 
     #    chain = LLMChain(llm=llm, prompt=prompt)
 
-    return overall_chain.run(serviceTitle=serviceTitle)
+    return overall_chain.run()
