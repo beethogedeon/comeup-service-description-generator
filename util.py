@@ -340,9 +340,10 @@ embeddings = HuggingFaceEmbeddings(
     model_name=model_name,
     model_kwargs=model_kwargs,
     encode_kwargs=encode_kwargs
-)
+ )
 
 vectorDB = Chroma(persist_directory="./vectorDB", embedding_function=embeddings)
+
 
 # prompt = PromptTemplate(
 #    input_variables=["serviceTitle", "minWord", "language"],
@@ -370,7 +371,7 @@ def generate(serviceTitle: str, openai_api_key: str) -> str:
     # Generate the plan
     plan_prompt_template = PromptTemplate(input_variables=["serviceTitle"], template=plan_template)
 
-    plan_chain = LLMChain(llm=llm, prompt=plan_prompt_template, output_variables=["structure"])
+    plan_chain = LLMChain(llm=llm, prompt=plan_prompt_template, output_key="text")
 
     # Generate content for each section of the plan"""
 
@@ -403,12 +404,12 @@ def generate(serviceTitle: str, openai_api_key: str) -> str:
 
     overall_chain = SimpleSequentialChain(chains=[plan_chain, content_chain], output_key="text")
 
-#    llm = ChatOpenAI(
-#        model_name="gpt-3.5-turbo-16k",
-#        max_tokens=9000,
-#        openai_api_key=openai_key
-#    )
+    #    llm = ChatOpenAI(
+    #        model_name="gpt-3.5-turbo-16k",
+    #        max_tokens=9000,
+    #        openai_api_key=openai_key
+    #    )
 
-#    chain = LLMChain(llm=llm, prompt=prompt)
+    #    chain = LLMChain(llm=llm, prompt=prompt)
 
     return overall_chain.run(serviceTitle=serviceTitle)
