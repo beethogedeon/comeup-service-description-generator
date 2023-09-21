@@ -381,7 +381,7 @@ def generate(serviceTitle: str, openai_api_key: str) -> str:
     Structure : {structure}
     """
 
-    llm2 = OpenAI(model_name="gpt-3.5-turbo-16k", temperature=.7, max_tokens=9000, openai_api_key=openai_api_key)
+    llm2 = ChatOpenAI(model_name="gpt-3.5-turbo-16k", temperature=.7, max_tokens=9000, openai_api_key=openai_api_key)
 
     content_prompt_template = PromptTemplate(input_variables=["structure"], template=content_template)
 
