@@ -400,7 +400,7 @@ def generate(serviceTitle: str, openai_api_key: str) -> str:
     enhancement_prompt_template = PromptTemplate(input_variables=["content"], template=enhancement_template)
 
     enhancement_chain = ConversationalRetrievalChain.from_llm(llm=llm2, retriever=vectorDB.as_retriever(),
-                                                              condense_question_prompt=enhancement_prompt_template)
+                                                              condense_question_prompt=enhancement_prompt_template).question_generator
 
     overall_chain = SimpleSequentialChain(chains=[plan_chain, content_chain, enhancement_chain])
 
