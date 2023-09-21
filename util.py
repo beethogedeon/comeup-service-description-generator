@@ -370,7 +370,7 @@ def generate(serviceTitle: str, openai_api_key: str) -> str:
     # Generate the plan
     plan_prompt_template = PromptTemplate(input_variables=["serviceTitle"], template=plan_template)
 
-    plan_chain = LLMChain(llm=llm, prompt=plan_prompt_template)
+    plan_chain = LLMChain(llm=llm, prompt=plan_prompt_template, output_variables=["structure"])
 
     # Generate content for each section of the plan"""
 
@@ -401,7 +401,7 @@ def generate(serviceTitle: str, openai_api_key: str) -> str:
     enhancement_chain = ConversationalRetrievalChain.from_llm(llm=llm2, retriever=vectorDB.as_retriever(),
                                                               condense_question_prompt=enhancement_prompt_template)
 
-    overall_chain = SimpleSequentialChain(chains=[plan_chain, content_chain, enhancement_chain])
+    overall_chain = SimpleSequentialChain(chains=[plan_chain, content_chain, enhancement_chain], output_key="text")
 
 #    llm = ChatOpenAI(
 #        model_name="gpt-3.5-turbo-16k",
